@@ -4,9 +4,8 @@ let columnCount = 0;
 let tokensRemaining = 3;
 const maxTokens = 3;
 let players = {};
-const YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY'; // Replace with your API key
+let storyPointingVotes = [];
 
-// State Management Functions
 function saveAppState() {
     console.log('Saving app state to localStorage');
     const state = {
@@ -15,10 +14,14 @@ function saveAppState() {
         feedbackBoard: [],
         actionItems: [],
         songs: [],
-        tokensRemaining: tokensRemaining
+        tokensRemaining: tokensRemaining,
+        storyPointing: {
+            storyTitle: document.getElementById('story-title-text')?.textContent || '',
+            sizingMethod: document.getElementById('sizing-method')?.value || '',
+            votes: storyPointingVotes
+        }
     };
 
-    // Save columns
     const columns = document.querySelectorAll('.column');
     columns.forEach(column => {
         const columnId = column.id;
@@ -30,18 +33,15 @@ function saveAppState() {
         state.columns.push({ id: columnId, name: columnName, feedback: feedbackItems });
     });
 
-    // Save feedback board
     const feedbackList = document.getElementById('feedback-list');
     state.feedbackBoard = Array.from(feedbackList.children).map(li => li.childNodes[0].textContent.trim());
 
-    // Save action items
     const actionList = document.getElementById('action-list');
     state.actionItems = Array.from(actionList.children).map(li => ({
         text: li.childNodes[1].textContent.trim(),
         checked: li.querySelector('input[type="checkbox"]').checked
     }));
 
-    // Save songs
     const songList = document.getElementById('song-list');
     state.songs = Array.from(songList.children).map(li => ({
         videoId: li.querySelector('.song-player').id.replace('player-', ''),
@@ -58,13 +58,11 @@ function loadAppState() {
 
     const state = JSON.parse(savedState);
 
-    // Load room name
     document.getElementById('room-name').textContent = state.roomName;
 
-    // Load columns
     state.columns.forEach(column => {
         addColumn(column.name);
-        const columnId = `column-${columnCount}`; // columnCount is incremented in addColumn
+        const columnId = `column-${columnCount}`;
         column.feedback.forEach(item => {
             const li = document.createElement('li');
             const voteCount = document.createElement('span');
@@ -102,7 +100,6 @@ function loadAppState() {
         });
     });
 
-    // Load feedback board
     const feedbackList = document.getElementById('feedback-list');
     state.feedbackBoard.forEach(feedbackText => {
         const li = document.createElement('li');
@@ -118,7 +115,6 @@ function loadAppState() {
         feedbackList.appendChild(li);
     });
 
-    // Load action items
     const actionList = document.getElementById('action-list');
     state.actionItems.forEach(item => {
         const li = document.createElement('li');
@@ -143,7 +139,6 @@ function loadAppState() {
         actionList.appendChild(li);
     });
 
-    // Load songs
     const songList = document.getElementById('song-list');
     state.songs.forEach(song => {
         const li = document.createElement('li');
@@ -201,21 +196,45 @@ function loadAppState() {
                 },
                 'onError': (event) => {
                     console.error(`YouTube player error for ${song.videoId}:`, event.data);
-                    alert('Error loading YouTube video.');
+                    alert('Error loading YouTube video. Please check the URL.');
                 }
             }
         });
     });
 
-    // Load tokens
     tokensRemaining = state.tokensRemaining;
     updateTokenCounter();
     if (tokensRemaining === 0) {
         disableAllVoteButtons();
     }
+
+    if (state.storyPointing) {
+        const { storyTitle, sizingMethod, votes } = state.storyPointing;
+        if (storyTitle) {
+            document.getElementById('story-title-text').textContent = storyTitle;
+            document.getElementById('story-title-display').style.display = 'block';
+            document.getElementById('story-title-section').style.display = 'none';
+            document.getElementById('sizing-method-section').style.display = 'block';
+        }
+        if (sizingMethod) {
+            document.getElementById('sizing-method').value = sizingMethod;
+            updateSizingOptions();
+            document.getElementById('voting-section').style.display = 'block';
+        }
+        storyPointingVotes = votes || [];
+        displayVoteResults();
+    }
 }
 
-// Dark Mode Toggle
+function clearData() {
+    console.log('clearData called');
+    if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+        localStorage.removeItem('retrocadeState');
+        localStorage.removeItem('theme');
+        location.reload();
+    }
+}
+
 function toggleTheme() {
     console.log('toggleTheme called');
     const body = document.body;
@@ -224,14 +243,13 @@ function toggleTheme() {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
 }
 
-// Load Theme Preference
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
     }
 
-    loadAppState(); // Load app state on page load
+    loadAppState();
 });
 
 function startIcebreaker() {
@@ -464,7 +482,7 @@ function addColumn(name = `New Column ${columnCount + 1}`) {
 
     const editSection = document.createElement('div');
     editSection.className = 'column-edit';
-    editSection.id = `${columnId}-edit`;
+    editSection_wallet_id = `${columnId}-edit`;
     const editInput = document.createElement('input');
     editInput.type = 'text';
     editInput.id = `${columnId}-input`;
@@ -820,138 +838,284 @@ function addActionItem() {
     }
 }
 
-function openSongSearchModal() {
-    console.log('openSongSearchModal called');
-    const modal = document.getElementById('song-search-modal');
-    if (modal) {
-        modal.style.display = 'block';
-        document.getElementById('song-search-input').value = '';
-        document.getElementById('song-search-results').innerHTML = '';
-    }
+function extractYouTubeVideoId(url) {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
 }
 
-function closeSongSearchModal() {
-    console.log('closeSongSearchModal called');
-    const modal = document.getElementById('song-search-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-async function searchSongs() {
-    console.log('searchSongs called');
-    const query = document.getElementById('song-search-input').value.trim();
-    const resultsList = document.getElementById('song-search-results');
-
-    if (!query) {
-        alert('Please enter a search query.');
-        return;
-    }
-
-    resultsList.innerHTML = 'Searching...';
-
-    try {
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}&maxResults=10`);
-        const data = await response.json();
-
-        if (data.items && data.items.length > 0) {
-            resultsList.innerHTML = '';
-            data.items.forEach(item => {
-                const li = document.createElement('li');
-                const title = item.snippet.title;
-                const videoId = item.id.videoId;
-                li.textContent = title;
-                li.onclick = () => addSongFromSearch(videoId, title);
-                resultsList.appendChild(li);
-            });
-        } else {
-            resultsList.innerHTML = 'No results found.';
-        }
-    } catch (error) {
-        console.error('Error searching YouTube:', error);
-        resultsList.innerHTML = 'Error searching for songs. Please try again.';
-    }
-}
-
-function addSongFromSearch(videoId, title) {
-    console.log('addSongFromSearch called', videoId, title);
+function addSong() {
+    console.log('addSong called');
+    const input = document.getElementById('song-input');
     const songList = document.getElementById('song-list');
+    const songUrl = input.value.trim();
 
-    if (!songList) {
-        console.error('Song list not found');
+    if (!input || !songList) {
+        console.error('Song elements missing:', { input, songList });
+        alert('Error: Song elements not found. Check console.');
         return;
     }
 
-    const li = document.createElement('li');
-    const voteCount = document.createElement('span');
-    voteCount.textContent = '0';
-    voteCount.style.marginRight = '10px';
-    voteCount.className = 'vote-count';
-    const upvoteBtn = document.createElement('button');
-    upvoteBtn.textContent = 'Upvote';
-    upvoteBtn.className = 'upvote-btn';
-    upvoteBtn.onclick = () => {
-        voteCount.textContent = parseInt(voteCount.textContent) + 1;
-        saveAppState();
-    };
-    li.appendChild(voteCount);
-    li.appendChild(upvoteBtn);
-    li.appendChild(document.createTextNode(` ${title}`));
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.onclick = () => {
-        if (players[videoId]) {
-            players[videoId].destroy();
-            delete players[videoId];
+    if (songUrl !== '') {
+        const videoId = extractYouTubeVideoId(songUrl);
+        if (!videoId) {
+            alert('Please enter a valid YouTube URL.');
+            return;
         }
-        li.remove();
-        saveAppState();
-    };
-    li.appendChild(deleteBtn);
 
-    const playerContainer = document.createElement('div');
-    playerContainer.className = 'player-container';
-    const playerDiv = document.createElement('div');
-    playerDiv.id = `player-${videoId}`;
-    playerDiv.className = 'song-player';
-    playerContainer.appendChild(playerDiv);
-    li.appendChild(playerContainer);
-
-    songList.appendChild(li);
-
-    players[videoId] = new YT.Player(`player-${videoId}`, {
-        height: '112',
-        width: '200',
-        videoId: videoId,
-        playerVars: {
-            'autoplay': 0,
-            'controls': 1,
-            'modestbranding': 1,
-            'rel': 0,
-            'showinfo': 0
-        },
-        events: {
-            'onReady': (event) => {
-                console.log(`YouTube player for ${videoId} is ready`);
-            },
-            'onError': (event) => {
-                console.error(`YouTube player error for ${videoId}:`, event.data);
-                alert('Error loading YouTube video.');
+        const li = document.createElement('li');
+        const voteCount = document.createElement('span');
+        voteCount.textContent = '0';
+        voteCount.style.marginRight = '10px';
+        voteCount.className = 'vote-count';
+        const upvoteBtn = document.createElement('button');
+        upvoteBtn.textContent = 'Upvote';
+        upvoteBtn.className = 'upvote-btn';
+        upvoteBtn.onclick = () => {
+            voteCount.textContent = parseInt(voteCount.textContent) + 1;
+            saveAppState();
+        };
+        li.appendChild(voteCount);
+        li.appendChild(upvoteBtn);
+        li.appendChild(document.createTextNode(` ${songUrl}`));
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.onclick = () => {
+            if (players[videoId]) {
+                players[videoId].destroy();
+                delete players[videoId];
             }
-        }
-    });
+            li.remove();
+            saveAppState();
+        };
+        li.appendChild(deleteBtn);
 
-    closeSongSearchModal();
+        const playerContainer = document.createElement('div');
+        playerContainer.className = 'player-container';
+        const playerDiv = document.createElement('div');
+        playerDiv.id = `player-${videoId}`;
+        playerDiv.className = 'song-player';
+        playerContainer.appendChild(playerDiv);
+        li.appendChild(playerContainer);
+
+        songList.appendChild(li);
+
+        players[videoId] = new YT.Player(`player-${videoId}`, {
+            height: '112',
+            width: '200',
+            videoId: videoId,
+            playerVars: {
+                'autoplay': 0,
+                'controls': 1,
+                'modestbranding': 1,
+                'rel': 0,
+                'showinfo': 0
+            },
+            events: {
+                'onReady': (event) => {
+                    console.log(`YouTube player for ${videoId} is ready`);
+                },
+                'onError': (event) => {
+                    console.error(`YouTube player error for ${videoId}:`, event.data);
+                    alert('Error loading YouTube video. Please check the URL.');
+                }
+            }
+        });
+
+        input.value = '';
+        saveAppState();
+    } else {
+        alert('Please enter a song URL before adding.');
+    }
+}
+
+// Story Pointing Functions
+function startStoryPointing() {
+    console.log('startStoryPointing called');
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('story-pointing-section').style.display = 'block';
+}
+
+function saveStoryTitle() {
+    console.log('saveStoryTitle called');
+    const input = document.getElementById('story-title-input');
+    const display = document.getElementById('story-title-display');
+    const text = document.getElementById('story-title-text');
+    const storyTitleSection = document.getElementById('story-title-section');
+    const sizingMethodSection = document.getElementById('sizing-method-section');
+
+    if (!input || !display || !text || !storyTitleSection || !sizingMethodSection) {
+        console.error('Story pointing elements missing:', { input, display, text, storyTitleSection, sizingMethodSection });
+        alert('Error: Story pointing elements not found. Check console.');
+        return;
+    }
+
+    const storyTitle = input.value.trim();
+    if (storyTitle !== '') {
+        text.textContent = storyTitle;
+        display.style.display = 'block';
+        storyTitleSection.style.display = 'none';
+        sizingMethodSection.style.display = 'block';
+        saveAppState();
+    } else {
+        alert('Please enter a story title.');
+    }
+}
+
+function editStoryTitle() {
+    console.log('editStoryTitle called');
+    const input = document.getElementById('story-title-input');
+    const display = document.getElementById('story-title-display');
+    const storyTitleSection = document.getElementById('story-title-section');
+    const text = document.getElementById('story-title-text');
+
+    if (!input || !display || !storyTitleSection || !text) {
+        console.error('Story pointing elements missing:', { input, display, storyTitleSection, text });
+        alert('Error: Story pointing elements not found. Check console.');
+        return;
+    }
+
+    input.value = text.textContent;
+    display.style.display = 'none';
+    storyTitleSection.style.display = 'block';
+}
+
+function updateSizingOptions() {
+    console.log('updateSizingOptions called');
+    const method = document.getElementById('sizing-method').value;
+    const voteOptions = document.getElementById('vote-options');
+    const votingSection = document.getElementById('voting-section');
+
+    if (!method || !voteOptions || !votingSection) {
+        console.error('Sizing method elements missing:', { method, voteOptions, votingSection });
+        alert('Error: Sizing method elements not found. Check console.');
+        return;
+    }
+
+    voteOptions.innerHTML = '<option value="">Select a size...</option>';
+
+    if (method === 'fibonacci') {
+        const fibOptions = [1, 2, 3, 5, 8, 13, 21];
+        fibOptions.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            voteOptions.appendChild(option);
+        });
+    } else if (method === 'tshirt') {
+        const tshirtOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+        tshirtOptions.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            voteOptions.appendChild(option);
+        });
+    }
+
+    votingSection.style.display = 'block';
     saveAppState();
 }
 
-// Drag-and-Drop for Columns (with Touch Support)
+function submitVote() {
+    console.log('submitVote called');
+    const voteOptions = document.getElementById('vote-options');
+    const vote = voteOptions.value;
+
+    if (!vote) {
+        alert('Please select a size to vote.');
+        return;
+    }
+
+    storyPointingVotes.push(vote);
+    displayVoteResults();
+    saveAppState();
+}
+
+function displayVoteResults() {
+    console.log('displayVoteResults called');
+    const resultsList = document.getElementById('vote-results-list');
+    const summary = document.getElementById('vote-summary');
+
+    if (!resultsList || !summary) {
+        console.error('Vote results elements missing:', { resultsList, summary });
+        return;
+    }
+
+    resultsList.innerHTML = '';
+    storyPointingVotes.forEach((vote, index) => {
+        const li = document.createElement('li');
+        li.textContent = `Vote ${index + 1}: ${vote}`;
+        resultsList.appendChild(li);
+    });
+
+    if (storyPointingVotes.length > 0) {
+        const method = document.getElementById('sizing-method').value;
+        if (method === 'fibonacci') {
+            const average = storyPointingVotes.reduce((sum, vote) => sum + parseInt(vote), 0) / storyPointingVotes.length;
+            const closestFib = [1, 2, 3, 5, 8, 13, 21].reduce((prev, curr) => Math.abs(curr - average) < Math.abs(prev - average) ? curr : prev);
+            summary.textContent = `Average: ${average.toFixed(1)}, Suggested Fibonacci: ${closestFib}`;
+        } else {
+            const voteCounts = {};
+            storyPointingVotes.forEach(vote => {
+                voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+            });
+            const mostCommon = Object.keys(voteCounts).reduce((a, b) => voteCounts[a] > voteCounts[b] ? a : b);
+            summary.textContent = `Most common size: ${mostCommon} (${voteCounts[mostCommon]} votes)`;
+        }
+    } else {
+        summary.textContent = 'No votes yet.';
+    }
+}
+
+function resetStoryPointing() {
+    console.log('resetStoryPointing called');
+    const storyTitleSection = document.getElementById('story-title-section');
+    const storyTitleDisplay = document.getElementById('story-title-display');
+    const storyTitleInput = document.getElementById('story-title-input');
+    const sizingMethodSection = document.getElementById('sizing-method-section');
+    const sizingMethod = document.getElementById('sizing-method');
+    const votingSection = document.getElementById('voting-section');
+    const voteOptions = document.getElementById('vote-options');
+    const resultsList = document.getElementById('vote-results-list');
+    const summary = document.getElementById('vote-summary');
+
+    if (!storyTitleSection || !storyTitleDisplay || !storyTitleInput || !sizingMethodSection || !sizingMethod || !votingSection || !voteOptions || !resultsList || !summary) {
+        console.error('Story pointing reset elements missing:', { storyTitleSection, storyTitleDisplay, storyTitleInput, sizingMethodSection, sizingMethod, votingSection, voteOptions, resultsList, summary });
+        return;
+    }
+
+    storyTitleSection.style.display = 'block';
+    storyTitleDisplay.style.display = 'none';
+    storyTitleInput.value = '';
+    sizingMethodSection.style.display = 'none';
+    sizingMethod.value = '';
+    votingSection.style.display = 'none';
+    voteOptions.innerHTML = '<option value="">Select a size...</option>';
+    storyPointingVotes = [];
+    resultsList.innerHTML = '';
+    summary.textContent = 'No votes yet.';
+    saveAppState();
+}
+
+function returnToMainMenuFromStoryPointing() {
+    console.log('returnToMainMenuFromStoryPointing called');
+    const storyPointingSection = document.getElementById('story-pointing-section');
+    const mainMenu = document.getElementById('main-menu');
+
+    if (!storyPointingSection || !mainMenu) {
+        console.error('Navigation elements missing:', { storyPointingSection, mainMenu });
+        return;
+    }
+
+    storyPointingSection.style.display = 'none';
+    mainMenu.style.display = 'block';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('columns-container');
     if (!container) return;
 
-    // Mouse Drag-and-Drop
     container.addEventListener('dragstart', (e) => {
         const target = e.target.closest('.column');
         if (target) {
@@ -991,7 +1155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Touch Drag-and-Drop
     let touchTarget = null;
     let touchStartX = 0;
     let touchStartY = 0;
