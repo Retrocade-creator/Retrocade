@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Savage Agile</title>
+    <title>Retrocade</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
-        <h1 class="app-title">Savage Agile</h1>
+        <h1 class="app-title">Retrocade</h1>
         <button id="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
     </header>
     <main>
         <div id="main-menu" style="display: block;">
-            <h2>Welcome to Retrocade</h2>
-            <button onclick="startIcebreaker()">Start Icebreaker</button>
-            <button onclick="startWorkingAgreements()">Set Working Agreements</button>
-            <button onclick="startRetrospective()">Start Retrospective</button>
+            <h2>What would you like to do?</h2>
+            <button onclick="startIcebreaker()">Icebreaker</button>
+            <button onclick="startRetrospective()">Retrospective</button>
+            <button onclick="startWorkingAgreements()">Working Agreement</button>
+            <button onclick="startStoryPointing()">Story Pointing</button>
             <button onclick="clearData()" style="margin-top: 10px; background-color: #ef4444;">Clear Data</button>
         </div>
         <div id="icebreaker-section" style="display: none;">
@@ -138,16 +139,44 @@
             </div>
             <div id="song-voting">
                 <h2>Song Voting</h2>
-                <button onclick="openSongSearchModal()">Search for a Song</button>
-                <div id="song-search-modal" class="modal" style="display: none;">
-                    <div class="modal-content">
-                        <span class="close" onclick="closeSongSearchModal()">×</span>
-                        <input type="text" id="song-search-input" placeholder="Search for a song on YouTube...">
-                        <button onclick="searchSongs()">Search</button>
-                        <ul id="song-search-results"></ul>
-                    </div>
-                </div>
+                <input type="text" id="song-input" placeholder="Enter YouTube song URL...">
+                <button onclick="addSong()">Add Song</button>
                 <ul id="song-list"></ul>
+            </div>
+        </div>
+        <div id="story-pointing-section" style="display: none;">
+            <h2>Story Pointing</h2>
+            <div id="story-title-section">
+                <input type="text" id="story-title-input" placeholder="Paste story title...">
+                <button onclick="saveStoryTitle()">Save Story</button>
+            </div>
+            <div id="story-title-display" style="display: none; margin-top: 10px;">
+                <h3 id="story-title-text"></h3>
+                <button onclick="editStoryTitle()">Edit Story Title</button>
+            </div>
+            <div id="sizing-method-section" style="margin-top: 20px;">
+                <h3>Choose Sizing Method</h3>
+                <select id="sizing-method" onchange="updateSizingOptions()">
+                    <option value="">Select a method...</option>
+                    <option value="fibonacci">Fibonacci</option>
+                    <option value="tshirt">T-Shirt Sizing</option>
+                </select>
+            </div>
+            <div id="voting-section" style="display: none; margin-top: 20px;">
+                <h3>Vote on Story Points</h3>
+                <select id="vote-options">
+                    <option value="">Select a size...</option>
+                </select>
+                <button onclick="submitVote()">Submit Vote</button>
+                <div id="vote-results" style="margin-top: 20px;">
+                    <h4>Vote Results</h4>
+                    <ul id="vote-results-list"></ul>
+                    <p id="vote-summary"></p>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="resetStoryPointing()">Reset Story Pointing</button>
+                <button onclick="returnToMainMenuFromStoryPointing()" style="margin-left: 10px;">Return to Main Menu</button>
             </div>
         </div>
     </main>
