@@ -62,6 +62,7 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 header {
@@ -117,7 +118,7 @@ main {
     margin: 10px;
 }
 
-#icebreaker-section, #working-agreements-section {
+#icebreaker-section, #working-agreements-section, #story-pointing-section {
     background-color: var(--section-bg);
     padding: 20px;
     border-radius: 8px;
@@ -125,11 +126,11 @@ main {
     transition: transform 0.3s ease;
 }
 
-#icebreaker-section:hover, #working-agreements-section:hover {
+#icebreaker-section:hover, #working-agreements-section:hover, #story-pointing-section:hover {
     transform: translateY(-2px);
 }
 
-#icebreaker-presets, #column-presets {
+#icebreaker-presets, #column-presets, #sizing-method, #vote-options {
     padding: 8px;
     margin-right: 10px;
     border: 1px solid var(--input-border);
@@ -137,6 +138,8 @@ main {
     background-color: var(--section-bg);
     cursor: pointer;
     color: var(--text-color);
+    width: 100%;
+    max-width: 300px;
 }
 
 #icebreaker-display, #working-agreements-section {
@@ -149,7 +152,7 @@ main {
     margin-bottom: 15px;
 }
 
-#agreement-input {
+#agreement-input, #story-title-input {
     width: 80%;
     padding: 10px;
     margin-right: 10px;
@@ -159,17 +162,18 @@ main {
     color: var(--text-color);
 }
 
-#agreement-list {
+#agreement-list, #vote-results-list {
     list-style: none;
     padding: 0;
     margin: 15px 0;
 }
 
-#agreement-list li {
+#agreement-list li, #vote-results-list li {
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 #room-name-section {
@@ -275,6 +279,7 @@ body.dark-mode #tokens-remaining {
     border: 1px solid var(--border-color);
     transition: transform 0.3s ease, opacity 0.3s ease;
     cursor: move;
+    touch-action: none;
 }
 
 .column:hover {
@@ -321,6 +326,12 @@ body.dark-mode #tokens-remaining {
 
 .column:hover button {
     display: inline-block;
+}
+
+@media (hover: none) {
+    .column button {
+        display: inline-block;
+    }
 }
 
 .column button.edit {
@@ -398,6 +409,7 @@ button:hover {
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 #action-list input[type="checkbox"] {
@@ -471,4 +483,72 @@ button:hover {
 
 #song-list .player-container {
     margin-top: 10px;
+}
+
+#story-title-display h3 {
+    display: inline-block;
+    margin-right: 10px;
+    color: var(--text-color);
+}
+
+#vote-results-list {
+    margin-top: 10px;
+}
+
+#vote-summary {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* iPad Adjustments */
+@media (max-width: 1024px) {
+    body {
+        padding: 10px;
+    }
+
+    .app-title {
+        font-size: 2em;
+    }
+
+    #theme-toggle {
+        top: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    main {
+        gap: 15px;
+    }
+
+    #main-menu, #icebreaker-section, #working-agreements-section, #columns-section, #feedback-board, #action-items, #song-voting, #story-pointing-section {
+        padding: 15px;
+    }
+
+    #icebreaker-presets, #column-presets, #sizing-method, #vote-options {
+        max-width: 100%;
+    }
+
+    #agreement-input, #feedback-input, #action-input, #song-input, #story-title-input {
+        width: 70%;
+    }
+
+    .column {
+        min-width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .column-feedback-input {
+        width: 85%;
+    }
+
+    .song-player {
+        width: 100%;
+        max-width: 300px;
+        height: 169px;
+    }
+
+    button {
+        padding: 8px 16px;
+    }
 }
